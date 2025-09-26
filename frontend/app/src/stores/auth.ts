@@ -2,10 +2,17 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
-  const isAuthenticated = ref(false) // Placeholder
+  const isAuthenticated = ref(false)
 
-  // In the future, we will have actions to login, logout, etc.
-  // and update isAuthenticated accordingly.
+  function login() {
+    // This will be replaced with token-based logic later
+    isAuthenticated.value = true
+  }
 
-  return { isAuthenticated }
+  function logout() {
+    isAuthenticated.value = false
+    // This will also clear the token later
+  }
+
+  return { isAuthenticated, login, logout }
 })

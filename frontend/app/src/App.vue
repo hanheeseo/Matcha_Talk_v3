@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView, useRouter } from 'vue-router'
+import { useAuthStore } from './stores/auth'
+import { storeToRefs } from 'pinia'
+
+const router = useRouter()
+const authStore = useAuthStore()
+const { isAuthenticated } = storeToRefs(authStore)
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -8,8 +19,16 @@ import { RouterView } from 'vue-router'
       <v-toolbar-title>MatchaTalk</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn to="/" text>Home</v-btn>
-      <v-btn to="/register" text>Register</v-btn>
-      <v-btn to="/login" text>Login</v-btn>
+      
+      <template v-if="!isAuthenticated">
+        <v-btn to="/register" text>Register</v-btn>
+        <v-btn to="/login" text>Login</v-btn>
+      </template>
+      
+      <template v-else>
+        <v-btn @click="handleLogout" text>Logout</v-btn>
+      </template>
+
     </v-app-bar>
 
     <v-main>
