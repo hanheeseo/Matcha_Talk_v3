@@ -1,32 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-
-const message = ref('Loading...')
-
-onMounted(async () => {
-  try {
-    const response = await fetch('/api/hello')
-    const data = await response.json()
-    message.value = data.message
-  } catch (error) {
-    message.value = 'Failed to load message from backend.'
-    console.error(error)
-  }
-})
+import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <main>
-    <h1>{{ message }}</h1>
-  </main>
+  <v-app>
+    <v-app-bar app>
+      <v-toolbar-title>MatchaTalk</v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-btn to="/" text>Home</v-btn>
+      <v-btn to="/register" text>Register</v-btn>
+      <v-btn to="/login" text>Login</v-btn>
+    </v-app-bar>
+
+    <v-main>
+      <RouterView />
+    </v-main>
+  </v-app>
 </template>
 
 <style scoped>
-main {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 2rem;
-}
+/* Specific styles can be added here if needed */
 </style>

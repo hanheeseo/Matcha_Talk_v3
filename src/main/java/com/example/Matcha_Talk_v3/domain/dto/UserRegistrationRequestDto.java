@@ -13,4 +13,5 @@ public class UserRegistrationRequestDto {
     private String countryCode;
     private String gender;
     private LocalDate birthDate;
+    private String languageCode;
 }

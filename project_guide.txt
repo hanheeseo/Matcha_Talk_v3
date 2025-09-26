@@ -9,11 +9,64 @@
 - Matcha-Talk 웹서비스 풀스택 개발
 - 코드 작성, 수정, 리뷰 전부
 - GitHub 통한 직접 작업 수행
+- 핵심기능은 랜덤채팅(텍스트 번역 파파고 api사용), 영상채팅(websocket,webrtc)
 
 ## 현재 상태
-- 처음부터 다시 내용 작성 중
+- 기본 회원가입 기능 구현 완료
+
+## 구현된 기능
+
+### 백엔드
+- **프로젝트 구조**: Spring Boot 기본 패키지 구조 (controller, service, repository 등) 설정
+- **데이터베이스**: H2 인메모리 DB 설정
+- **보안**: Spring Security 의존성 추가 및 기본 설정 (`permitAll`, `PasswordEncoder` 등록)
+- **회원가입 API**:
+  - `POST /api/users/register` 엔드포인트 구현
+  - 비밀번호 암호화하여 사용자 정보 저장
+  - 아이디/이메일 중복 시 `409 Conflict` 에러 처리
+- **로그인 API (기본)**:
+  - `POST /api/users/login` 엔드포인트 구현
+  - 아이디/비밀번호 유효성 검사 및 예외 처리
+
+### 프론트엔드
+- **프로젝트 구조**: Vue 3 + Vite 기반 프로젝트 생성 (`/frontend/app`)
+- **UI 라이브러리**: Vuetify 3 설정 완료
+- **상태 관리**: Pinia 설정 완료
+- **API 통신**: `axios` 설치 및 `Vite` 프록시 설정 완료
+- **화면 구현**:
+  - 메인 페이지 (`HomeView`) UI 적용
+  - 회원가입 페이지 (`RegisterView`) 상세 폼 UI 및 유효성 검사 기능 적용
+  - Vuetify 레이아웃 시스템 (`v-app`)을 사용한 전체 앱 레이아웃 구조 설정
+
+## 다음 진행할 내용
+- **아이디 중복 확인** 기능 구현 (프론트엔드 + 백엔드)
+- **이메일 인증** 기능 구현 (프론트엔드 + 백엔드)
+- **로그인 UI** 구현 및 API 연동
+- **JWT 기반 인증** 도입하여 로그인 상태 유지
+- **schema.sql** 기반 나머지 Entity 및 API 구현
+
+## 주요 설정 파일
+- **백엔드**:
+  - `C:\Users\shh06\project-gemini\Matcha_Talk_v3\build.gradle`
+  - `C:\Users\shh06\project-gemini\Matcha_Talk_v3\src\main\resources\application.properties`
+- **프론트엔드**:
+  - `C:\Users\shh06\project-gemini\Matcha_Talk_v3\frontend\app\vite.config.ts`
+  - `C:\Users\shh06\project-gemini\Matcha_Talk_v3\frontend\app\src\main.ts`
+  - `C:\Users\shh06\project-gemini\Matcha_Talk_v3\frontend\app\src\router\index.ts`
+
+## 실행 명령어
+- **백엔드**: `C:\Users\shh06\project-gemini\Matcha_Talk_v3` 경로에서 `./gradlew bootRun` 실행
+- **프론트엔드**: `C:\Users\shh06\project-gemini\Matcha_Talk_v3\frontend\app` 경로에서 `npm run dev` 실행
+
+## 데이터베이스 정보
+- **종류**: H2 In-Memory Database
+- **H2 Console URL**: `http://localhost:8080/h2-console`
+- **JDBC URL**: `jdbc:h2:mem:testdb`
+- **Username**: `sa`
+- **Password**: (없음)
 
 ## 작업 방식
 -  코드에 관련한 질문을 받고 코드 블록을 내놓을 때에는 작성 후 한 번 더 사용자에게 알릴 것
 - 실용적이고 production-ready한 코드 작성
 - 한국어로 친근하게 소통
+- **프론트엔드는 항상 백엔드의 구조를 우선하여 작업**

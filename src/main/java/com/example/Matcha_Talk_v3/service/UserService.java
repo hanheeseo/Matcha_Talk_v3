@@ -39,6 +39,7 @@ public class UserService {
                 .countryCode(requestDto.getCountryCode())
                 .gender(requestDto.getGender())
                 .birthDate(requestDto.getBirthDate())
+                .languageCode(requestDto.getLanguageCode())
                 .build();
         userRepository.save(user);
     }
@@ -53,5 +54,9 @@ public class UserService {
 
         // For now, just return a success message. JWT generation will be implemented later.
         return "Login successful";
+    }
+
+    public boolean loginIdExists(String loginId) {
+        return userRepository.findByLoginId(loginId).isPresent();
     }
 }
