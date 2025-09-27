@@ -26,6 +26,7 @@ const handleLogout = () => {
       </template>
       
       <template v-else>
+        <v-btn to="/chat" text>Chat</v-btn>
         <v-btn @click="handleLogout" text>Logout</v-btn>
       </template>
 

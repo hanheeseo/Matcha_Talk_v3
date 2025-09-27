@@ -7,6 +7,9 @@ import vuetify from 'vite-plugin-vuetify'
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    global: 'window',
+  },
   plugins: [
     vue(),
     vueDevTools(),

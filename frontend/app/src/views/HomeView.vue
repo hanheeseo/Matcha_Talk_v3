@@ -42,7 +42,7 @@
             <v-btn class="mt-4 rounded-pill px-8" color="pink" size="x-large" :to="ctaTo">가입 하기</v-btn>
           </div>
           <div v-if="isAuth">
-            <v-btn class="mt-4 rounded-pill px-8" color="pink" size="x-large" to="/match">매칭 시작</v-btn>
+            <v-btn class="mt-4 rounded-pill px-8" color="pink" size="x-large" to="/chat">채팅 시작</v-btn>
           </div>
         </div>
       </v-container>

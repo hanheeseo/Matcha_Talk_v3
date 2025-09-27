@@ -22,6 +22,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 클라이언트들이 WebSocket에 연결할 때 사용할 엔드포인트를 /ws로 설정
         // SockJS는 WebSocket을 지원하지 않는 브라우저에서도 비슷한 경험을 제공하기 위한 폴백 옵션
-        registry.addEndpoint("/ws").withSockJS();
+        registry.addEndpoint("/ws").setAllowedOrigins("http://localhost:5173").withSockJS();
     }
 }
