@@ -45,7 +45,7 @@
       <v-col cols="12" md="4">
         <v-card class="d-flex flex-column fill-height" elevation="2">
           <v-toolbar color="pink-lighten-4" density="compact">
-            <v-toolbar-title class="text-pink-darken-2">{{ room.name }}</v-toolbar-title>
+            <v-toolbar-title class="text-pink-darken-2">{{ room?.name }}</v-toolbar-title>
             <v-spacer></v-spacer>
             <v-btn icon to="/chat">
               <v-icon>mdi-arrow-left</v-icon>
@@ -84,25 +84,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '@/services/api';
 import { useWebRTC } from '@/composables/useWebRTC';
 import { useStompChat } from '@/composables/useStompChat';
-import type { ChatRoom, SignalMessage } from '@/types/chat';
+import type { ChatRoom, SignalMessage, ChatMessage } from '@/types/chat';
 
 // Basic Setup
 const route = useRoute();
 const roomId = route.params.roomId as string;
 const sender = ref('');
-const room = ref<ChatRoom>({ roomId: '', name: '' });
+const receiver = ref('');
+const room = ref<ChatRoom | null>(null);
 
 // Initialize composables with a wrapper to handle circular dependency
 const webrtc = useWebRTC((type: 'offer' | 'answer' | 'candidate', data: any) => {
   stomp.sendSignal(type, data);
 });
 
-const stomp = useStompChat(roomId, sender, (signal: SignalMessage) => {
+const stomp = useStompChat(roomId, sender, receiver, (signal: SignalMessage) => {
   webrtc.handleSignal(signal);
 });
 
@@ -130,18 +131,21 @@ const handleSendMessage = () => {
   }
 };
 
+// Watch for incoming messages to identify the other participant
+watch(messages, (newMessages) => {
+  const lastMessage = newMessages[newMessages.length - 1];
+  if (lastMessage && lastMessage.type === 'ENTER' && lastMessage.sender !== sender.value) {
+    if (!receiver.value) {
+      receiver.value = lastMessage.sender;
+      console.log(`Receiver set to: ${receiver.value}`);
+    }
+  }
+  scrollToBottom();
+}, { deep: true });
+
 // Lifecycle Hooks
 onMounted(async () => {
-  // Fetch room details
-  try {
-    const response = await api.get<ChatRoom>(`/chat/room/${roomId}`);
-    room.value = response.data;
-  } catch (error) {
-    console.error('Failed to load chat room info.', error);
-    alert('Could not load chat room info.');
-  }
-
-  // Set sender username
+  // Set sender username first
   let storedSender = localStorage.getItem('chat_sender');
   if (!storedSender) {
     storedSender = prompt('Enter your nickname for the chat:', 'Anonymous');
@@ -151,8 +155,27 @@ onMounted(async () => {
   }
   sender.value = storedSender || 'Anonymous';
 
-  // Connect to WebSocket
+  // Connect to WebSocket to allow entering the room
   connect();
+
+  // Fetch room details to find the other participant
+  try {
+    // We add a small delay to give the backend time to register the user's entry
+    await new Promise(resolve => setTimeout(resolve, 250));
+    
+    const response = await api.get<ChatRoom>(`/chat/room/${roomId}`);
+    room.value = response.data;
+    if (room.value && room.value.participants) {
+      const otherParticipant = room.value.participants.find(p => p !== sender.value);
+      if (otherParticipant) {
+        receiver.value = otherParticipant;
+        console.log(`Initial receiver set to: ${receiver.value}`);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load chat room info.', error);
+    alert('Could not load chat room info.');
+  }
 });
 </script>
 

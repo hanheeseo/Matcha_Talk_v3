@@ -73,7 +73,7 @@ export function useWebRTC(sendSignal: (type: 'offer' | 'answer' | 'candidate', d
   };
 
   const handleSignal = async (signal: SignalMessage) => {
-    if (!peerConnection.value || !signal.data) {
+    if (!peerConnection.value || !signal.payload) {
         // Ensure we have a peer connection and data before proceeding
         if (signal.type === 'offer') {
             await getMediaStream();
@@ -90,18 +90,18 @@ export function useWebRTC(sendSignal: (type: 'offer' | 'answer' | 'candidate', d
     try {
         switch (signal.type) {
             case 'offer':
-                await pc.setRemoteDescription(new RTCSessionDescription(signal.data));
+                await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 sendSignal('answer', answer);
                 break;
             case 'answer':
-                await pc.setRemoteDescription(new RTCSessionDescription(signal.data));
+                await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
                 break;
             case 'candidate':
                 // Add candidate only if remote description is set
                 if (pc.remoteDescription) {
-                    await pc.addIceCandidate(new RTCIceCandidate(signal.data));
+                    await pc.addIceCandidate(new RTCIceCandidate(signal.payload));
                 } else {
                     console.warn('Remote description not set, ignoring ICE candidate.');
                 }

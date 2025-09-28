@@ -6,6 +6,7 @@ import type { ChatMessage, SignalMessage } from '@/types/chat';
 export function useStompChat(
   roomId: string,
   sender: Ref<string>,
+  receiver: Ref<string>,
   handleSignal: (signal: SignalMessage) => void
 ) {
   const messages = ref<ChatMessage[]>([]);
@@ -17,6 +18,9 @@ export function useStompChat(
     const client = new Client({
       webSocketFactory: () => socket,
       debug: (str) => console.log(new Date(), str),
+      connectHeaders: {
+        username: sender.value,
+      },
       onConnect: (frame: IFrame) => {
         console.log('STOMP connection successful:', frame);
         isConnected.value = true;
@@ -27,8 +31,8 @@ export function useStompChat(
           messages.value.push(receivedMessage);
         });
 
-        // Subscribe to private WebRTC signaling messages
-        client.subscribe(`/user/queue/signal`, (message: IMessage) => {
+        // Subscribe to WebRTC signaling messages on a public topic
+        client.subscribe(`/topic/signal/${sender.value}`, (message: IMessage) => {
           const signal: SignalMessage = JSON.parse(message.body);
           handleSignal(signal);
         });
@@ -80,18 +84,16 @@ export function useStompChat(
     }
   };
 
-  const sendSignal = (type: 'offer' | 'answer' | 'candidate', data: any) => {
-    if (isConnected.value) {
-      // TODO: Implement logic to determine the actual receiver
-      const receiver = "user_B"; 
+  const sendSignal = (type: 'offer' | 'answer' | 'candidate', payload: any) => {
+    if (isConnected.value && receiver.value) {
       const signalMessage: SignalMessage = {
         type,
         sender: sender.value,
-        receiver,
-        data,
+        receiver: receiver.value,
+        payload,
       };
       stompClient.value?.publish({
-        destination: '/app/signal',
+        destination: '/app/chat/signal',
         body: JSON.stringify(signalMessage),
       });
     }

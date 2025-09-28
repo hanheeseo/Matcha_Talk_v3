@@ -1,6 +1,7 @@
 export interface ChatRoom {
   roomId: string;
   name: string;
+  participants: string[];
 }
 
 export interface ChatMessage {
@@ -14,5 +15,5 @@ export interface SignalMessage {
   type: 'offer' | 'answer' | 'candidate';
   sender: string;
   receiver: string;
-  data: any;
+  payload: any;
 }

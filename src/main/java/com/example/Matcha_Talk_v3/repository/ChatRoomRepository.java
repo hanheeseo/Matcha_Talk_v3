@@ -32,4 +32,18 @@ public class ChatRoomRepository {
         chatRoomMap.put(chatRoom.getRoomId(), chatRoom);
         return chatRoom;
     }
+
+    public void addParticipant(String roomId, String participant) {
+        ChatRoom room = chatRoomMap.get(roomId);
+        if (room != null) {
+            room.getParticipants().add(participant);
+        }
+    }
+
+    public void removeParticipant(String roomId, String participant) {
+        ChatRoom room = chatRoomMap.get(roomId);
+        if (room != null) {
+            room.getParticipants().remove(participant);
+        }
+    }
 }

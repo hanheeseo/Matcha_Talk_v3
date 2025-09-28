@@ -14,7 +14,7 @@
 ## 현재 상태
 - 기본 회원가입 및 로그인 기능 구현
 - 기본 텍스트 채팅 기능 (백엔드 + 프론트엔드) 구현 완료
-- **기본 영상 채팅 기능 (프론트엔드 WebRTC 기반) 구현 완료**
+- **기본 영상 채팅 기능 (WebRTC, STOMP 시그널링) 전체 흐름 구현 완료**
 
 ## 구현된 기능
 
@@ -28,12 +28,16 @@
   - 실시간 메시지 처리를 위한 컨트롤러 구현 (`ChatController`)
   - 채팅방 생성 및 조회를 위한 REST API 구현 (`ChatRoomController`)
   - DTO (`ChatMessage`, `ChatRoom`) 및 인메모리 저장소 구현 (`ChatRoomRepository`)
+- **영상 채팅 백엔드 (WebRTC 시그널링)**:
+  - STOMP 메시지 핸들러(`/app/signal`)를 통해 WebRTC 시그널링(offer, answer, candidate) 메시지를 중계하는 기능 구현
+  - STOMP 연결 시 커스텀 헤더(`username`)를 통해 사용자를 식별할 수 있도록 `StompHandler` 및 `WebSocketConfig` 설정
+  - 디버깅 과정에서 특정 사용자 간 메시지 전송이 실패함에 따라, 임시로 공개 토픽(`/topic/signal/{username}`)을 사용하도록 수정하여 문제 해결
 
 ### 프론트엔드
 - **프로젝트 구조**: Vue 3 + Vite 기반 프로젝트 생성 (`/frontend/app`)
 - **UI 라이브러리**: Vuetify 3 설정 완료 및 `Tree-shaking` 문제 해결
 - **상태 관리**: Pinia 설정 완료
-- **API 통신**: `axios` 설치 및 `Vite` 프록시, `baseURL` 설정 완료
+- **API 통신**: `axios` 설치 및 `Vite` 프록시, `baseURL` 설정 완료 (`/api/api` 중복 호출 버그 수정)
 - **화면 구현**:
   - 메인 페이지 (`HomeView`), 회원가입 (`RegisterView`), 로그인 (`LoginView`)
   - Vuetify 레이아웃 시스템 (`v-app`)을 사용한 전체 앱 레이아웃 구조 설정
@@ -44,14 +48,15 @@
   - 채팅 관련 라우팅 설정 (`/chat`, `/chat/:roomId`)
 - **영상 채팅 프론트엔드 (WebRTC)**:
   - `ChatRoomView`의 레이아웃을 개편하여 영상(좌)과 텍스트(우) 영역을 분리.
-  - WebRTC 관련 로직을 `useWebRTC` 컴포저블로 분리하여 재사용성 및 관리 용이성 증대.
+  - WebRTC 관련 로직을 `useWebRTC` 컴포저블로 분리 (STUN 서버 설정 포함)
   - STOMP 채팅 관련 로직을 `useStompChat` 컴포저블로 분리.
-  - STOMP를 통해 WebRTC 시그널링 메시지(Offer, Answer, Candidate)를 교환하는 전체 흐름 구현.
+  - STOMP를 통해 WebRTC 시그널링 메시지를 교환하는 전체 흐름 구현 (백엔드와 `payload` 필드명 불일치 문제 수정)
   - 영상 통화 제어 UI 및 기능 구현 (통화 시작, 음소거/해제, 종료).
   - 채팅 관련 타입(`ChatMessage`, `SignalMessage` 등)을 `types/chat.ts` 파일로 분리하여 관리.
 
 ## 다음 진행할 내용
-- **영상 채팅 백엔드** 시그널링 로직 구현 (`/app/signal` 핸들러)
+- **영상 통화 수락/거절 기능 구현**: 현재는 통화 시 자동으로 카메라가 켜지는 '자동 수락' 방식. 사용자에게 수락/거절 선택권을 주는 UI/UX로 개선 필요.
+- **시그널링 채널 보안 강화**: 현재 디버깅을 위해 사용 중인 공개 토픽 방식(`/topic/signal`)을 다시 비공개 채널 방식(`/user/queue/signal`)으로 되돌리고, 안정적으로 동작하도록 `SimpUserRegistry` 관련 설정 문제 해결.
 - **이메일 인증** 기능 구현 (프론트엔드 + 백엔드)
 - **JWT 기반 인증** 도입하여 로그인 상태 유지
 
@@ -68,7 +73,7 @@
   - `C:\Users\shh06\project-gemini\Matcha_Talk_v3\frontend\app\src\router\index.ts`
 
 ## 실행 명령어
-- **백엔드**: `C:\Users\shh06\project-gemini\Matcha_Talk_v3` 경로에서 `./gradlew bootRun` 실행
+- **백엔드**: `C:\Users\shh06\project-gemini\Matcha_Talk_v3` 경로에서 `gradlew.bat bootRun` 실행 (Windows) 또는 `./gradlew bootRun` 실행 (Linux/Mac)
 - **프론트엔드**: `C:\Users\shh06\project-gemini\Matcha_Talk_v3\frontend\app` 경로에서 `npm run dev` 실행
 
 ## 데이터베이스 정보
