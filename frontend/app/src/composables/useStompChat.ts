@@ -92,6 +92,7 @@ export function useStompChat(
         receiver: receiver.value,
         payload,
       };
+      console.log(`>>> Sending signal: ${type}`, signalMessage);
       stompClient.value?.publish({
         destination: '/app/chat/signal',
         body: JSON.stringify(signalMessage),

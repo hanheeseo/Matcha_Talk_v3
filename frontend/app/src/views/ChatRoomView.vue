@@ -1,5 +1,20 @@
 <template>
   <v-container class="py-6 fill-height">
+    <!-- Incoming Call Dialog -->
+    <v-dialog v-model="showIncomingCallDialog" persistent max-width="400">
+      <v-card>
+        <v-card-title class="text-h5">영상 통화 수신</v-card-title>
+        <v-card-text>
+          {{ incomingCall?.sender }} 님으로부터 영상통화 요청이 왔습니다. 수락하시겠습니까?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red-darken-1" variant="text" @click="handleDeclineCall">거절</v-btn>
+          <v-btn color="green-darken-1" variant="text" @click="handleAcceptCall">수락</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-row class="fill-height">
       <!-- Video Chat Section -->
       <v-col cols="12" md="8">
@@ -84,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '@/services/api';
 import { useWebRTC } from '@/composables/useWebRTC';
@@ -97,21 +112,48 @@ const roomId = route.params.roomId as string;
 const sender = ref('');
 const receiver = ref('');
 const room = ref<ChatRoom | null>(null);
+const incomingCall = ref<SignalMessage | null>(null);
 
-// Initialize composables with a wrapper to handle circular dependency
-const webrtc = useWebRTC((type: 'offer' | 'answer' | 'candidate', data: any) => {
-  stomp.sendSignal(type, data);
-});
+// Initialize composables
+const webrtc = useWebRTC(
+  (type, data) => stomp.sendSignal(type, data), // sendSignal function
+  (offer) => { // onOfferReceived callback
+    console.log('Incoming call offer received:', offer);
+    incomingCall.value = offer;
+  }
+);
 
 const stomp = useStompChat(roomId, sender, receiver, (signal: SignalMessage) => {
   webrtc.handleSignal(signal);
 });
 
-// Destructure properties and methods for easy access in the template and script
-const { localVideo, remoteVideo, isMuted, initiateCall, toggleMute, hangUp } = webrtc;
+// Destructure properties and methods
+const { localVideo, remoteVideo, isMuted, initiateCall, answerCall, toggleMute, hangUp } = webrtc;
 const { messages, connect, sendMessage } = stomp;
 
-// Text Chat state and UI
+// --- Call Handling ---
+const showIncomingCallDialog = computed({
+  get: () => !!incomingCall.value,
+  set: (value) => {
+    if (!value) {
+      incomingCall.value = null;
+    }
+  }
+});
+
+const handleAcceptCall = () => {
+  if (incomingCall.value) {
+    answerCall(incomingCall.value);
+    incomingCall.value = null;
+  }
+};
+
+const handleDeclineCall = () => {
+  incomingCall.value = null;
+  // Optional: send a 'decline' signal to the caller
+};
+
+// --- Text Chat ---
 const newMessage = ref('');
 const messageContainer = ref<HTMLElement | null>(null);
 
@@ -131,7 +173,7 @@ const handleSendMessage = () => {
   }
 };
 
-// Watch for incoming messages to identify the other participant
+// --- Lifecycle and Watchers ---
 watch(messages, (newMessages) => {
   const lastMessage = newMessages[newMessages.length - 1];
   if (lastMessage && lastMessage.type === 'ENTER' && lastMessage.sender !== sender.value) {
@@ -143,9 +185,7 @@ watch(messages, (newMessages) => {
   scrollToBottom();
 }, { deep: true });
 
-// Lifecycle Hooks
 onMounted(async () => {
-  // Set sender username first
   let storedSender = localStorage.getItem('chat_sender');
   if (!storedSender) {
     storedSender = prompt('Enter your nickname for the chat:', 'Anonymous');
@@ -155,14 +195,10 @@ onMounted(async () => {
   }
   sender.value = storedSender || 'Anonymous';
 
-  // Connect to WebSocket to allow entering the room
   connect();
 
-  // Fetch room details to find the other participant
   try {
-    // We add a small delay to give the backend time to register the user's entry
     await new Promise(resolve => setTimeout(resolve, 250));
-    
     const response = await api.get<ChatRoom>(`/chat/room/${roomId}`);
     room.value = response.data;
     if (room.value && room.value.participants) {

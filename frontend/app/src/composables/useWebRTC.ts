@@ -1,7 +1,10 @@
 import { ref, type Ref } from 'vue';
 import type { SignalMessage } from '@/types/chat';
 
-export function useWebRTC(sendSignal: (type: 'offer' | 'answer' | 'candidate', data: any) => void) {
+export function useWebRTC(
+  sendSignal: (type: 'offer' | 'answer' | 'candidate', data: any) => void,
+  onOfferReceived: (offer: SignalMessage) => void
+) {
   const localVideo = ref<HTMLVideoElement | null>(null);
   const remoteVideo = ref<HTMLVideoElement | null>(null);
   const localStream = ref<MediaStream | null>(null);
@@ -32,6 +35,12 @@ export function useWebRTC(sendSignal: (type: 'offer' | 'answer' | 'candidate', d
       }
     };
 
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState) {
+        console.log(`>>> Connection state change: ${pc.connectionState}`);
+      }
+    };
+
     if (localStream.value) {
       localStream.value.getTracks().forEach(track => {
         pc.addTrack(track, localStream.value!);
@@ -58,6 +67,7 @@ export function useWebRTC(sendSignal: (type: 'offer' | 'answer' | 'candidate', d
   };
 
   const initiateCall = async () => {
+    console.log("!!! INITIATE CALL CALLED !!!");
     await getMediaStream();
     createPeerConnection();
 
@@ -72,43 +82,49 @@ export function useWebRTC(sendSignal: (type: 'offer' | 'answer' | 'candidate', d
     }
   };
 
-  const handleSignal = async (signal: SignalMessage) => {
-    if (!peerConnection.value || !signal.payload) {
-        // Ensure we have a peer connection and data before proceeding
-        if (signal.type === 'offer') {
-            await getMediaStream();
-            createPeerConnection();
-        } else {
-            console.warn('Peer connection not established or signal data missing, ignoring signal:', signal.type);
-            return;
-        }
+  const answerCall = async (offerSignal: SignalMessage) => {
+    console.log("!!! ANSWER CALL CALLED !!!");
+    if (peerConnection.value) {
+      console.warn("Peer connection already exists. Ignoring new call.");
+      return;
     }
+    await getMediaStream();
+    createPeerConnection();
 
-    // Ensure peerConnection is available after potential creation
     const pc = peerConnection.value!;
-
     try {
-        switch (signal.type) {
-            case 'offer':
-                await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                sendSignal('answer', answer);
-                break;
-            case 'answer':
-                await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
-                break;
-            case 'candidate':
-                // Add candidate only if remote description is set
-                if (pc.remoteDescription) {
-                    await pc.addIceCandidate(new RTCIceCandidate(signal.payload));
-                } else {
-                    console.warn('Remote description not set, ignoring ICE candidate.');
-                }
-                break;
-        }
+      await pc.setRemoteDescription(new RTCSessionDescription(offerSignal.payload));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendSignal('answer', answer);
     } catch (error) {
-        console.error('Error handling signal:', signal.type, error);
+      console.error("Error creating answer:", error);
+    }
+  };
+
+  const handleSignal = async (signal: SignalMessage) => {
+    try {
+      switch (signal.type) {
+        case 'offer':
+          onOfferReceived(signal);
+          break;
+        case 'answer':
+          if (peerConnection.value) {
+            console.log(">>> Received answer, setting remote description:", signal.payload);
+            await peerConnection.value.setRemoteDescription(new RTCSessionDescription(signal.payload));
+            console.log(">>> Remote description set successfully!");
+          }
+          break;
+        case 'candidate':
+          if (peerConnection.value && peerConnection.value.remoteDescription) {
+            await peerConnection.value.addIceCandidate(new RTCIceCandidate(signal.payload));
+          } else {
+            console.warn('Remote description not set, ignoring ICE candidate.');
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Error handling signal:', signal.type, error);
     }
   };
 
@@ -147,6 +163,7 @@ export function useWebRTC(sendSignal: (type: 'offer' | 'answer' | 'candidate', d
     peerConnection,
     isMuted,
     initiateCall,
+    answerCall,
     handleSignal,
     toggleMute,
     hangUp,
